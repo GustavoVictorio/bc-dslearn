@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.gustavoVictorio.dslearnbds.services.exceptions.DatabaseException;
+import com.gustavoVictorio.dslearnbds.services.exceptions.ForbiddenException;
 import com.gustavoVictorio.dslearnbds.services.exceptions.ResourceNotFoundException;
+import com.gustavoVictorio.dslearnbds.services.exceptions.UnauthorizedException;
 
 @ControllerAdvice
 public class ResourceExpectionHandler {
@@ -40,7 +42,7 @@ public class ResourceExpectionHandler {
 		err.setPath(request.getRequestURI());
 		return ResponseEntity.status(status).body(err);
 	}
-	
+
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<ValidationError> validation(MethodArgumentNotValidException e, HttpServletRequest request) {
 		HttpStatus status = HttpStatus.UNPROCESSABLE_ENTITY;
@@ -50,13 +52,24 @@ public class ResourceExpectionHandler {
 		err.setError("Validation exception");
 		err.setMessage(e.getMessage());
 		err.setPath(request.getRequestURI());
-		
-		for(FieldError f : e.getBindingResult().getFieldErrors()) {
+
+		for (FieldError f : e.getBindingResult().getFieldErrors()) {
 			err.addError(f.getField(), f.getDefaultMessage());
 		}
-		
-		
+
 		return ResponseEntity.status(status).body(err);
+	}
+
+	@ExceptionHandler(ForbiddenException.class)
+	public ResponseEntity<OAuthCustomErrr> forbidden(ForbiddenException e, HttpServletRequest request) {
+		OAuthCustomErrr err = new OAuthCustomErrr("Forbidden", e.getMessage());
+		return ResponseEntity.status(HttpStatus.FORBIDDEN).body(err);
+	}
+
+	@ExceptionHandler(UnauthorizedException.class)
+	public ResponseEntity<OAuthCustomErrr> unauthorized(UnauthorizedException e, HttpServletRequest request) {
+		OAuthCustomErrr err = new OAuthCustomErrr("Unauthorized", e.getMessage());
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(err);
 	}
 
 }
