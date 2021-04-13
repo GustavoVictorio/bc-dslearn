@@ -2,6 +2,8 @@ package com.gustavoVictorio.dslearnbds.services;
 
 import java.time.Instant;
 
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,16 +14,25 @@ import com.gustavoVictorio.dslearnbds.dto.NotificationDTO;
 import com.gustavoVictorio.dslearnbds.entities.Deliver;
 import com.gustavoVictorio.dslearnbds.entities.Notification;
 import com.gustavoVictorio.dslearnbds.entities.User;
+import com.gustavoVictorio.dslearnbds.observers.DeliverRevisionObserver;
 import com.gustavoVictorio.dslearnbds.repositories.NotificationRepository;
 
 @Service
-public class NotificationService {
+public class NotificationService implements DeliverRevisionObserver {
 
 	@Autowired
 	private NotificationRepository repository;
 
 	@Autowired
 	private AuthService authservice;
+
+	@Autowired
+	private DeliverService deliverService;
+
+	@PostConstruct
+	private void initialize() {
+		deliverService.subscribeDeliverRevisionObserver(this);
+	}
 
 	@Transactional(readOnly = true)
 	public Page<NotificationDTO> notificationForCurrentUser(boolean unreadOnly, Pageable pageable) {
@@ -32,7 +43,7 @@ public class NotificationService {
 	}
 
 	@Transactional
-	public void sevaDeliverNotification(Deliver deliver) {
+	public void seveDeliverNotification(Deliver deliver) {
 
 		Long sectionId = deliver.getLesson().getSection().getId();
 		Long resourceId = deliver.getLesson().getSection().getResource().getId();
@@ -46,6 +57,12 @@ public class NotificationService {
 
 		Notification notification = new Notification(null, text, moment, false, route, user);
 		repository.save(notification);
+	}
+
+	@Override
+	public void onSaveRevision(Deliver deliver) {
+		seveDeliverNotification(deliver);
+
 	}
 
 }

@@ -1,11 +1,15 @@
 package com.gustavoVictorio.dslearnbds.services;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.gustavoVictorio.dslearnbds.dto.DeliverRevisionDTO;
 import com.gustavoVictorio.dslearnbds.entities.Deliver;
+import com.gustavoVictorio.dslearnbds.observers.DeliverRevisionObserver;
 import com.gustavoVictorio.dslearnbds.repositories.DeliverRepository;
 
 @Service
@@ -13,9 +17,8 @@ public class DeliverService {
 
 	@Autowired
 	private DeliverRepository repository;
-	
-	@Autowired
-	private NotificationService notificationService;
+
+	private Set<DeliverRevisionObserver> deliverRevisionObservers = new LinkedHashSet<>();
 
 	@Transactional
 	public void saveRevision(Long id, DeliverRevisionDTO dto) {
@@ -24,8 +27,13 @@ public class DeliverService {
 		deliver.setFeedback(dto.getFeedback());
 		deliver.setCorrectCount(dto.getCorrectCount());
 		repository.save(deliver);
-		notificationService.sevaDeliverNotification(deliver);
+		for (DeliverRevisionObserver observer : deliverRevisionObservers) {
+			observer.onSaveRevision(deliver);
+		}
+	}
 
+	public void subscribeDeliverRevisionObserver(DeliverRevisionObserver observer) {
+		deliverRevisionObservers.add(observer);
 	}
 
 }
